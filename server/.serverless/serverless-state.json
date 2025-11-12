@@ -205,7 +205,7 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/fittrack-backend/dev/1762966164139-2025-11-12T16:49:24.139Z/fittrack-backend.zip"
+                "S3Key": "serverless/fittrack-backend/dev/1762970968921-2025-11-12T18:09:28.921Z/fittrack-backend.zip"
               },
               "Handler": "handler.handler",
               "Runtime": "nodejs18.x",
@@ -231,14 +231,14 @@
               "ApiLogGroup"
             ]
           },
-          "ApiLambdaVersionbYGlSOWlsHazGYn7brGrFrI1eJXi9h6sQtSdDVujJI": {
+          "ApiLambdaVersionAWPKMd48z4jQFqoEA73CDCHqm9I0V0lUTd5ZdLQ3k": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ApiLambdaFunction"
               },
-              "CodeSha256": "9ED/5vFqRifpGXppXPyq7Q+ADTsZvS9uYWee0I7BQm0="
+              "CodeSha256": "it1NIi/51uhOJW1mFVzOmZE/G90ayxKjLGNrBkxT4L8="
             }
           },
           "HttpApi": {
@@ -410,7 +410,7 @@
           "ApiLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ApiLambdaVersionbYGlSOWlsHazGYn7brGrFrI1eJXi9h6sQtSdDVujJI"
+              "Ref": "ApiLambdaVersionAWPKMd48z4jQFqoEA73CDCHqm9I0V0lUTd5ZdLQ3k"
             },
             "Export": {
               "Name": "sls-fittrack-backend-dev-ApiLambdaFunctionQualifiedArn"
@@ -559,7 +559,7 @@
         "timeout": 6,
         "runtime": "nodejs18.x",
         "vpc": {},
-        "versionLogicalId": "ApiLambdaVersionbYGlSOWlsHazGYn7brGrFrI1eJXi9h6sQtSdDVujJI"
+        "versionLogicalId": "ApiLambdaVersionAWPKMd48z4jQFqoEA73CDCHqm9I0V0lUTd5ZdLQ3k"
       }
     },
     "resources": {
@@ -654,7 +654,7 @@
     "artifact": "C:\\Users\\Lenovo\\Videos\\FitnessTrack-master\\server\\.serverless\\fittrack-backend.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/fittrack-backend/dev/1762966164139-2025-11-12T16:49:24.139Z",
+    "artifactDirectoryName": "serverless/fittrack-backend/dev/1762970968921-2025-11-12T18:09:28.921Z",
     "artifact": "fittrack-backend.zip"
   }
 }

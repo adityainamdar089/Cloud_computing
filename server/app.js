@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import * as dotenv from "dotenv";
 import UserRoutes from "./routes/User.js";
+import GeminiRoutes from "./routes/Gemini.js";
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/user", UserRoutes);
+app.use("/api", GeminiRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({
