@@ -207,7 +207,7 @@ const GeminiSuggestions = () => {
   const [copied, setCopied] = useState(false);
 
   // server endpoint -- ensure your server is running and exposes /api/generate
-  const API_ENDPOINT = useMemo(() => "/api/generate", []);
+  const API_ENDPOINT = useMemo(() => "https://eiupslxog9.execute-api.us-east-1.amazonaws.com/api/generate", []);
 
   const validateInputs = () => {
     setError("");
