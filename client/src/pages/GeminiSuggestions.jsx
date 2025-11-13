@@ -211,7 +211,7 @@ const GeminiSuggestions = () => {
   // Gemini API Key - stored in localStorage or use default
   const GEMINI_API_KEY = useMemo(() => {
     const storedKey = localStorage.getItem("gemini-api-key");
-    return storedKey || "AIzaSyDGIz0JX-ma0YqBfJzl3t59dnBYoxj0ZOk";
+    return storedKey || "AIzaSyBmG5wnTaCvjOB-jM5iUlY5UlECKyNwg8k";
   }, []);
 
   // Load chat history from localStorage on component mount

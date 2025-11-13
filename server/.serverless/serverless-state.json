@@ -17,7 +17,7 @@
         "WORKOUTS_TABLE": "fittrack-backend-workouts-dev",
         "USER_EMAIL_INDEX": "email-index",
         "JWT_SECRET": "change-me",
-        "GEMINI_API_KEY": "AIzaSyDGIz0JX-ma0YqBfJzl3t59dnBYoxj0ZOk"
+        "GEMINI_API_KEY": "AIzaSyBmG5wnTaCvjOB-jM5iUlY5UlECKyNwg8k"
       },
       "iam": {
         "role": {
@@ -222,7 +222,7 @@
                   "WORKOUTS_TABLE": "fittrack-backend-workouts-dev",
                   "USER_EMAIL_INDEX": "email-index",
                   "JWT_SECRET": "change-me",
-                  "GEMINI_API_KEY": "AIzaSyDGIz0JX-ma0YqBfJzl3t59dnBYoxj0ZOk"
+                  "GEMINI_API_KEY": "AIzaSyBmG5wnTaCvjOB-jM5iUlY5UlECKyNwg8k"
                 }
               },
               "Role": {
