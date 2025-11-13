@@ -1,9 +1,10 @@
 // client/src/components/GeminiSuggestions.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import styled from "styled-components";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { setWorkoutPlan } from "../redux/reducers/workoutPlanSlice";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 /* ---------------------- Styled components (unchanged) --------------------- */
 const Page = styled.div`
@@ -205,9 +206,56 @@ const GeminiSuggestions = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
 
-  // server endpoint -- ensure your server is running and exposes /api/generate
-  const API_ENDPOINT = useMemo(() => "https://eiupslxog9.execute-api.us-east-1.amazonaws.com/api/generate", []);
+  // Gemini API Key - stored in localStorage or use default
+  const GEMINI_API_KEY = useMemo(() => {
+    const storedKey = localStorage.getItem("gemini-api-key");
+    return storedKey || "AIzaSyDGIz0JX-ma0YqBfJzl3t59dnBYoxj0ZOk";
+  }, []);
+
+  // Load chat history from localStorage on component mount
+  useEffect(() => {
+    const storedChats = localStorage.getItem("fittrack-chat-history");
+    if (storedChats) {
+      try {
+        const parsedChats = JSON.parse(storedChats);
+        setChatHistory(parsedChats);
+        // Load the most recent response if available
+        if (parsedChats.length > 0) {
+          const lastChat = parsedChats[parsedChats.length - 1];
+          setResponse(lastChat.response || "");
+        }
+      } catch (err) {
+        console.error("Error loading chat history:", err);
+      }
+    }
+  }, []);
+
+  // Save chat to localStorage
+  const saveChatToLocalStorage = (prompt, responseText, userData) => {
+    const chatEntry = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      prompt,
+      response: responseText,
+      userData: {
+        age: userData.age,
+        weight: userData.weight,
+        height: userData.height,
+        target: userData.target,
+        duration: userData.duration,
+        frequency: userData.frequency,
+      },
+    };
+
+    const updatedHistory = [...chatHistory, chatEntry];
+    setChatHistory(updatedHistory);
+    
+    // Keep only last 50 chats to avoid localStorage size limits
+    const historyToSave = updatedHistory.slice(-50);
+    localStorage.setItem("fittrack-chat-history", JSON.stringify(historyToSave));
+  };
 
   const validateInputs = () => {
     setError("");
@@ -363,29 +411,68 @@ For the workout days, label them clearly as \"Day 1:\", \"Day 2:\", etc., and en
     setLoading(true);
 
     try {
-      // POST to our server endpoint. The server should call Gemini with the API key.
-      const resp = await fetch(API_ENDPOINT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt,
-          model: "gemini-2.5-flash", // server side will use this model name to call the Google API
-          maxOutputTokens: 1200,
-        }),
-      });
+      // Initialize Gemini API client
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      
+      // Try models in order: gemini-2.5-flash, then gemini-2.5-pro
+      const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-pro"];
+      let lastError = null;
+      let generatedText = "";
 
-      const data = await resp.json();
-      if (!resp.ok) {
-        // surface useful message if possible
-        const err = data?.error || data;
-        throw new Error(err?.message || JSON.stringify(err));
+      for (const modelName of modelsToTry) {
+        try {
+          console.log(`Attempting to use model: ${modelName}`);
+          const model = genAI.getGenerativeModel({ model: modelName });
+          
+          const result = await model.generateContent(prompt);
+          const response = await result.response;
+          generatedText = response.text();
+
+          if (generatedText && generatedText.trim().length > 0) {
+            console.log(`Successfully generated content with ${modelName}`);
+            break;
+          }
+        } catch (modelError) {
+          lastError = modelError;
+          const errorMessage = modelError.message || String(modelError);
+          console.error(`Error with model ${modelName}:`, errorMessage);
+          
+          // If it's a 404 (model not found), try next model
+          if (errorMessage.includes("404") || errorMessage.includes("not found")) {
+            continue;
+          }
+          
+          // If it's quota/rate limit, try next model
+          if (errorMessage.includes("429") || errorMessage.includes("quota") || errorMessage.includes("rate limit")) {
+            if (modelsToTry.indexOf(modelName) < modelsToTry.length - 1) {
+              continue;
+            }
+          }
+          
+          // For other errors, break and use the error
+          break;
+        }
       }
 
-      // Handle server response format
-      const generatedText = data.text || extractTextFromApiResponse(data);
+      if (!generatedText && lastError) {
+        throw lastError;
+      }
+
+      if (!generatedText) {
+        throw new Error("Failed to generate content from Gemini API");
+      }
+
       setResponse(generatedText);
+
+      // Save chat to localStorage
+      saveChatToLocalStorage(prompt, generatedText, {
+        age: ageNum,
+        weight: weightNum,
+        height: heightNum,
+        target,
+        duration: durationNum,
+        frequency: frequencyNum,
+      });
 
       // parse and save weekly schedule if possible
       const weeklySchedule = parseWeeklySchedule(generatedText);
@@ -402,7 +489,21 @@ For the workout days, label them clearly as \"Day 1:\", \"Day 2:\", etc., and en
       }
     } catch (err) {
       console.error("Error generating content:", err);
-      setError(err.message || String(err));
+      console.error("Full error object:", err);
+      
+      // Provide more helpful error messages
+      let errorMessage = err.message || String(err);
+      
+      // Check for specific error types
+      if (errorMessage.includes("429") || errorMessage.includes("quota exceeded")) {
+        errorMessage = "Gemini API quota exceeded. Please check your API quota and billing. Please wait before retrying or upgrade your plan.";
+      } else if (errorMessage.includes("401") || errorMessage.includes("API key")) {
+        errorMessage = "Invalid or missing Gemini API key. Please check your API key configuration.";
+      } else if (errorMessage.includes("503") || errorMessage.includes("overloaded")) {
+        errorMessage = "Server temporarily unavailable. The Gemini API models may be overloaded. Please try again in a moment.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -461,6 +562,8 @@ For the workout days, label them clearly as \"Day 1:\", \"Day 2:\", etc., and en
   };
 
   const extractWorkoutFormat = (text) => {
+    if (!text) return null;
+    
     const lines = text.split("\n");
     const workouts = [];
     let currentWorkout = [];
@@ -470,41 +573,88 @@ For the workout days, label them clearly as \"Day 1:\", \"Day 2:\", etc., and en
       if (!line) continue;
 
       if (line.startsWith("#")) {
+        // If we have a complete workout (5 lines), save it
         if (currentWorkout.length === 5) {
           workouts.push(currentWorkout.join("\n"));
         }
+        // Start new workout
         currentWorkout = [line];
       } else if (currentWorkout.length > 0 && line.startsWith("-")) {
         currentWorkout.push(line);
+        // If we have 5 lines (category + 4 details), save the workout
         if (currentWorkout.length === 5) {
           workouts.push(currentWorkout.join("\n"));
           currentWorkout = [];
         }
       } else if (currentWorkout.length > 0 && currentWorkout.length < 5) {
-        // invalid block encountered — reset
-        currentWorkout = [];
+        // If we encounter a non-dash line while building a workout, it might be invalid
+        // But let's be more lenient - only reset if we have very few lines
+        if (currentWorkout.length === 1 && !line.startsWith("#")) {
+          // Only reset if we just started and hit something unexpected
+          currentWorkout = [];
+        }
       }
     }
 
-    if (currentWorkout.length === 5) workouts.push(currentWorkout.join("\n"));
+    // Save any remaining complete workout
+    if (currentWorkout.length === 5) {
+      workouts.push(currentWorkout.join("\n"));
+    }
 
     return workouts.length > 0 ? workouts.join("; ") : null;
   };
 
-  const handleCopyWorkouts = () => {
-    const workoutFormat = extractWorkoutFormat(response);
-    if (workoutFormat) {
-      navigator.clipboard.writeText(workoutFormat);
+  const handleCopyWorkouts = async () => {
+    try {
+      // First try to extract formatted workouts
+      let textToCopy = extractWorkoutFormat(response);
+      
+      // If extraction fails, try to extract just the workout sections from the response
+      if (!textToCopy) {
+        // Look for workout sections in the response
+        const workoutSectionMatch = response.match(/Weekly Workout Schedule[\s\S]*?(?=Program Overview|Diet Plan|$)/i);
+        if (workoutSectionMatch) {
+          // Extract just the workout lines (lines starting with # or -)
+          const workoutLines = workoutSectionMatch[0]
+            .split("\n")
+            .filter(line => line.trim().startsWith("#") || line.trim().startsWith("-"))
+            .join("\n");
+          
+          if (workoutLines.trim().length > 0) {
+            textToCopy = workoutLines;
+          }
+        }
+      }
+      
+      // If still nothing, copy the entire response
+      if (!textToCopy) {
+        textToCopy = response;
+      }
+      
+      // Copy to clipboard
+      await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } else {
-      alert(
-        "No properly formatted workouts found in the response.\n\nExpected format:\n#Category\n-Workout Name\n-X sets Y reps\n-Weight kg\n-Duration min\n\nPlease regenerate the plan to get properly formatted workouts."
-      );
+    } catch (err) {
+      console.error("Failed to copy to clipboard:", err);
+      // Fallback: try using a temporary textarea
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = extractWorkoutFormat(response) || response;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (fallbackErr) {
+        alert("Failed to copy to clipboard. Please select and copy the text manually.");
+      }
     }
   };
 
-  const workoutFormat = extractWorkoutFormat(response);
 
   return (
     <Page>
@@ -633,7 +783,7 @@ Example:
 
         {error && <ErrorBanner>{error}</ErrorBanner>}
 
-        {response && !workoutFormat && (
+        {response && !extractWorkoutFormat(response) && (
           <InfoBanner>
             <strong>⚠️ Workout Format Required:</strong>
             <br />
@@ -658,15 +808,7 @@ Example:
           <>
             <ResponseWrapper>{response}</ResponseWrapper>
             <Actions>
-              {workoutFormat && (
-                <CopyButton onClick={handleCopyWorkouts}>{copied ? "✓ Copied!" : "Copy Workout Format"}</CopyButton>
-              )}
-              <Button
-                onClick={() => navigate("/your-workout")}
-                style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
-              >
-                View Your Workout Plan →
-              </Button>
+              <CopyButton onClick={handleCopyWorkouts}>{copied ? "✓ Copied!" : "Copy Workout Format"}</CopyButton>
             </Actions>
           </>
         )}

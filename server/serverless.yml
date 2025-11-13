@@ -6,11 +6,14 @@ provider:
   runtime: nodejs18.x
   region: ${env:AWS_REGION, "us-east-1"}
   stage: ${env:STAGE, "dev"}
+  httpApi:
+    cors: true
   environment:
     USERS_TABLE: ${self:service}-users-${sls:stage}
     WORKOUTS_TABLE: ${self:service}-workouts-${sls:stage}
     USER_EMAIL_INDEX: email-index
     JWT_SECRET: ${env:JWT_SECRET, "change-me"}
+    GEMINI_API_KEY: ${env:GEMINI_API_KEY, "AIzaSyDGIz0JX-ma0YqBfJzl3t59dnBYoxj0ZOk"}
   iam:
     role:
       statements:
@@ -30,6 +33,8 @@ provider:
 functions:
   api:
     handler: handler.handler
+    timeout: 30
+    memorySize: 512
     events:
       - httpApi:
           path: /{proxy+}

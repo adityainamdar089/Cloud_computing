@@ -7,13 +7,23 @@ const API = axios.create({
 // Add a request interceptor to automatically attach the token from localStorage
 API.interceptors.request.use(
   (config) => {
+    // Public endpoints that don't require authentication
+    const publicEndpoints = ["/user/signup", "/user/signin"];
+    // Check both the full URL and just the path
+    const requestPath = config.url || "";
+    const isPublicEndpoint = publicEndpoints.some(endpoint => 
+      requestPath.includes(endpoint) || requestPath.endsWith(endpoint)
+    );
+    
     const token = localStorage.getItem("fittrack-app-token");
-    console.log(token);
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else {
+    } else if (!isPublicEndpoint) {
+      // Only warn for protected endpoints that require authentication
       console.warn("No token found in localStorage for request to:", config.url);
     }
+    // For public endpoints (signup/signin), it's normal to not have a token - no warning needed
     return config;
   },
   (error) => {

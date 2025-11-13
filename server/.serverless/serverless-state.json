@@ -9,11 +9,15 @@
       "runtime": "nodejs18.x",
       "region": "us-east-1",
       "stage": "dev",
+      "httpApi": {
+        "cors": true
+      },
       "environment": {
         "USERS_TABLE": "fittrack-backend-users-dev",
         "WORKOUTS_TABLE": "fittrack-backend-workouts-dev",
         "USER_EMAIL_INDEX": "email-index",
-        "JWT_SECRET": "change-me"
+        "JWT_SECRET": "change-me",
+        "GEMINI_API_KEY": "AIzaSyDGIz0JX-ma0YqBfJzl3t59dnBYoxj0ZOk"
       },
       "iam": {
         "role": {
@@ -205,19 +209,20 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/fittrack-backend/dev/1762970968921-2025-11-12T18:09:28.921Z/fittrack-backend.zip"
+                "S3Key": "serverless/fittrack-backend/dev/1763027597665-2025-11-13T09:53:17.665Z/fittrack-backend.zip"
               },
               "Handler": "handler.handler",
               "Runtime": "nodejs18.x",
               "FunctionName": "fittrack-backend-dev-api",
-              "MemorySize": 1024,
-              "Timeout": 6,
+              "MemorySize": 512,
+              "Timeout": 30,
               "Environment": {
                 "Variables": {
                   "USERS_TABLE": "fittrack-backend-users-dev",
                   "WORKOUTS_TABLE": "fittrack-backend-workouts-dev",
                   "USER_EMAIL_INDEX": "email-index",
-                  "JWT_SECRET": "change-me"
+                  "JWT_SECRET": "change-me",
+                  "GEMINI_API_KEY": "AIzaSyDGIz0JX-ma0YqBfJzl3t59dnBYoxj0ZOk"
                 }
               },
               "Role": {
@@ -231,21 +236,44 @@
               "ApiLogGroup"
             ]
           },
-          "ApiLambdaVersionAWPKMd48z4jQFqoEA73CDCHqm9I0V0lUTd5ZdLQ3k": {
+          "ApiLambdaVersionoqdIJqlgPnMRLHCILRcIve39tJi3A9ZSitd29Ze7PI": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ApiLambdaFunction"
               },
-              "CodeSha256": "it1NIi/51uhOJW1mFVzOmZE/G90ayxKjLGNrBkxT4L8="
+              "CodeSha256": "GuJdE+9Vz0nzZwq2/y+H8MV6e0lvpMbQzzeQ15+co1Q="
             }
           },
           "HttpApi": {
             "Type": "AWS::ApiGatewayV2::Api",
             "Properties": {
               "Name": "dev-fittrack-backend",
-              "ProtocolType": "HTTP"
+              "ProtocolType": "HTTP",
+              "CorsConfiguration": {
+                "AllowHeaders": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "AllowMethods": [
+                  "OPTIONS",
+                  "GET",
+                  "POST",
+                  "PUT",
+                  "PATCH",
+                  "HEAD",
+                  "DELETE"
+                ],
+                "AllowOrigins": [
+                  "*"
+                ]
+              }
             }
           },
           "HttpApiStage": {
@@ -410,7 +438,7 @@
           "ApiLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ApiLambdaVersionAWPKMd48z4jQFqoEA73CDCHqm9I0V0lUTd5ZdLQ3k"
+              "Ref": "ApiLambdaVersionoqdIJqlgPnMRLHCILRcIve39tJi3A9ZSitd29Ze7PI"
             },
             "Export": {
               "Name": "sls-fittrack-backend-dev-ApiLambdaFunctionQualifiedArn"
@@ -543,6 +571,8 @@
     "functions": {
       "api": {
         "handler": "handler.handler",
+        "timeout": 30,
+        "memorySize": 512,
         "events": [
           {
             "httpApi": {
@@ -555,11 +585,10 @@
         ],
         "name": "fittrack-backend-dev-api",
         "package": {},
-        "memory": 1024,
-        "timeout": 6,
+        "memory": 512,
         "runtime": "nodejs18.x",
         "vpc": {},
-        "versionLogicalId": "ApiLambdaVersionAWPKMd48z4jQFqoEA73CDCHqm9I0V0lUTd5ZdLQ3k"
+        "versionLogicalId": "ApiLambdaVersionoqdIJqlgPnMRLHCILRcIve39tJi3A9ZSitd29Ze7PI"
       }
     },
     "resources": {
@@ -654,7 +683,7 @@
     "artifact": "C:\\Users\\Lenovo\\Videos\\FitnessTrack-master\\server\\.serverless\\fittrack-backend.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/fittrack-backend/dev/1762970968921-2025-11-12T18:09:28.921Z",
+    "artifactDirectoryName": "serverless/fittrack-backend/dev/1763027597665-2025-11-13T09:53:17.665Z",
     "artifact": "fittrack-backend.zip"
   }
 }
